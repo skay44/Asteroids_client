@@ -1,10 +1,95 @@
 #include <SFML/Graphics.hpp>
 #include <cmath>
 #include <stdio.h>
+#include <list>
 using namespace sf;
 
 // Helper constants for converting degrees to radians
 const float DEG_TO_RAD = 3.14159f / 180.0f;
+
+class Projectile {
+public:
+    Projectile(float startX, float startY, float speedX, float speedY)
+        : position(startX, startY), speed(speedX, speedY) {
+        // za³aduj teksturke pocisku
+        if (!texture.loadFromFile("projectile.png")) {
+            // Handle loading error
+            printf("sraka!!");
+        }
+        sprite.setTexture(texture);
+        sprite.setScale(0.05, 0.05);
+        sprite.setOrigin(texture.getSize().x / 2, texture.getSize().y / 2); // Set origin to center for proper rotation
+        rotation = atan2(speedY, speedX) / DEG_TO_RAD + 90;
+    }
+
+    void update(float deltaTime, int windowWidth, int windowHeight, RenderWindow& window) {
+        // update pozycji
+        position.x += speed.x * deltaTime;
+        position.y += speed.y * deltaTime;
+
+        // eleportacja jak jest na krañcu ekranu
+        if (position.x < 0) {
+            position.x = windowWidth;
+        }
+        else if (position.x > windowWidth) {
+            position.x = 0;
+        }
+        if (position.y < 0) {
+            position.y = windowHeight;
+        }
+        else if (position.y > windowHeight) {
+            position.y = 0;
+        }
+
+        sprite.setPosition(position);
+        sprite.setRotation(rotation);
+
+        //rysowanie statku
+        draw(window);
+        if (sprite.getGlobalBounds().top < 0) {
+            position.y += windowHeight;
+            sprite.setPosition(position);
+            draw(window);
+            position.y -= windowHeight;
+            sprite.setPosition(position);
+        }
+        else if (sprite.getGlobalBounds().top + sprite.getGlobalBounds().height > windowHeight)
+        {
+            position.y -= windowHeight;
+            sprite.setPosition(position);
+            draw(window);
+            position.y += windowHeight;
+            sprite.setPosition(position);
+        }
+        if (sprite.getGlobalBounds().left < 0) {
+            position.x += windowWidth;
+            sprite.setPosition(position);
+            draw(window);
+            position.x -= windowWidth;
+            sprite.setPosition(position);
+        }
+        else if (sprite.getGlobalBounds().left + sprite.getGlobalBounds().width > windowWidth)
+        {
+            position.x -= windowWidth;
+            sprite.setPosition(position);
+            draw(window);
+            position.x += windowWidth;
+            sprite.setPosition(position);
+        }
+    }
+
+    void draw(sf::RenderWindow& window) {
+        // rysujemy sprita
+        window.draw(sprite);
+    }
+
+private:
+    sf::Vector2f position;
+    sf::Vector2f speed;
+    float rotation;
+    sf::Texture texture;
+    sf::Sprite sprite;
+};
 
 class Spaceship {
 public:
@@ -104,6 +189,11 @@ public:
         speed.y += acceleration * -std::cos(rotation * DEG_TO_RAD);
     }
 
+    Projectile* shooting(int windowWidth)
+    {
+        return new Projectile(position.x, position.y, sin(rotation * DEG_TO_RAD) * 0.1 * windowWidth, -cos(rotation * DEG_TO_RAD) * 0.1 * windowWidth);
+    }
+
 private:
     sf::Vector2f position;
     sf::Vector2f speed;
@@ -111,6 +201,7 @@ private:
     sf::Texture texture;
     sf::Sprite sprite;
 };
+
 
 int main() {
     //test2323
@@ -123,7 +214,7 @@ int main() {
     double rotationSpeed = 100;
     double acceleration = 0.1 * desktopMode.width;
 
-    
+    std::vector<Projectile*> projectiles;
 
     //zegar bo potem musi byæ delta time ¿eby dzia³a³o jak ma
     sf::Clock clock;
@@ -155,14 +246,17 @@ int main() {
         if (Keyboard::isKeyPressed(Keyboard::W)) {
             spaceship.accelerate(acceleration * deltaTime); // przyœpieszenie
         }
-        if (Keyboard::isKeyPressed(Keyboard::Escape)) {
-            window.close();
+        if (Keyboard::isKeyPressed(Keyboard::Space)) {
+            projectiles.push_back(spaceship.shooting(desktopMode.width));
         }
 
         window.clear();
 
         // Update spaceship
         spaceship.update(deltaTime, desktopMode.width, desktopMode.height, window);
+        for (int i = 0; i < projectiles.size(); i++) {
+            projectiles[i]->update(deltaTime, desktopMode.width, desktopMode.height, window);
+        }
 
         window.display();
     }

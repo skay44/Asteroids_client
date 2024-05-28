@@ -113,6 +113,7 @@ private:
 };
 
 int main() {
+    //test2323
     VideoMode desktopMode = VideoMode::getDesktopMode(); //wyci¹gamy rozmiar monitora
     sf::RenderWindow window(desktopMode, "Asteroids Clone", Style::Fullscreen); //tworzymy okno gry
 

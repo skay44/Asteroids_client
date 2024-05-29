@@ -14,7 +14,9 @@
 
 using namespace sf;
 
+//size of temporary data packet - we should determine the details of how to send data in order to do anything further
 #define DATA_PACKET_SIZE 10
+//if defined packets will be send every "WAIT_TIME" seconds, instead of all the time
 #define PERIODIC_PACKET_SEND
 #define WAIT_TIME 0.5
 
@@ -42,7 +44,7 @@ void GameplayLoop(int connection) {
 #endif
 
     while (window.isOpen()) {
-        data[0] = 12323;
+        data[0] = 12323; //id of packet (first 4 bytes of packet) 12323 - defoult id for movement
         for (int i = 1; i < DATA_PACKET_SIZE; i++) {
             data[i] = 0;
         }
@@ -105,6 +107,8 @@ void GameplayLoop(int connection) {
 }
 
 int main() {
+
+    //initializing Windows Socket API (windows moment)
     WSADATA wsaData;
     int iResult;
     iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -113,31 +117,36 @@ int main() {
         return 1;
     }
 
+    //obtaining local ip adress
     struct hostent* host = gethostbyname("localhost");
     if (host == NULL) {
         return 45;
     }
+
     struct sockaddr_in addr;
     addr.sin_family = AF_INET;
+    //htons - converts data in pc format to network format (probably little endian to big endian idk)
+    //based on this port, clients will select the appropriate server in the local network to connect to
     addr.sin_port = htons(2278);
     memcpy(&addr.sin_addr,host->h_addr_list[0],host->h_length);
 
+    //creating socket
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1) {
         return 47;
     }
 
+    //connecting with serwer using sockaddr_in adress
     if (connect(sockfd, (const struct sockaddr*)&addr, sizeof(addr))) {
         return 46;
     }
-
     const char* text = "connected";
     send(sockfd, text, strlen(text), 0);
+
+    //main gameplay loop
     GameplayLoop(sockfd);
 
     closesocket(sockfd);
-
-
 
     WSACleanup();
     return 0;

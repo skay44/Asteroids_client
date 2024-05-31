@@ -1,209 +1,27 @@
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <SFML/Graphics.hpp>
 #include <cmath>
 #include <stdio.h>
 #include <list>
+#include <io.h>
+
+#include <winsock2.h>
+
+#include "Projectile.hpp"
+#include "Spaceship.h"
+
 using namespace sf;
 
-// Helper constants for converting degrees to radians
-const float DEG_TO_RAD = 3.14159f / 180.0f;
+//size of temporary data packet - we should determine the details of how to send data in order to do anything further
+#define DATA_PACKET_SIZE 10
+//if defined packets will be send every "WAIT_TIME" seconds, instead of all the time
+#define PERIODIC_PACKET_SEND
+#define WAIT_TIME 0.5
 
-class Projectile {
-public:
-    Projectile(float startX, float startY, float speedX, float speedY)
-        : position(startX, startY), speed(speedX, speedY) {
-        // za³aduj teksturke pocisku
-        if (!texture.loadFromFile("projectile.png")) {
-            // Handle loading error
-            printf("sraka!!");
-        }
-        sprite.setTexture(texture);
-        sprite.setScale(0.05, 0.05);
-        sprite.setOrigin(texture.getSize().x / 2, texture.getSize().y / 2); // Set origin to center for proper rotation
-        rotation = atan2(speedY, speedX) / DEG_TO_RAD + 90;
-    }
-
-    void update(float deltaTime, int windowWidth, int windowHeight, RenderWindow& window) {
-        // update pozycji
-        position.x += speed.x * deltaTime;
-        position.y += speed.y * deltaTime;
-
-        // eleportacja jak jest na krañcu ekranu
-        if (position.x < 0) {
-            position.x = windowWidth;
-        }
-        else if (position.x > windowWidth) {
-            position.x = 0;
-        }
-        if (position.y < 0) {
-            position.y = windowHeight;
-        }
-        else if (position.y > windowHeight) {
-            position.y = 0;
-        }
-
-        sprite.setPosition(position);
-        sprite.setRotation(rotation);
-
-        //rysowanie statku
-        draw(window);
-        if (sprite.getGlobalBounds().top < 0) {
-            position.y += windowHeight;
-            sprite.setPosition(position);
-            draw(window);
-            position.y -= windowHeight;
-            sprite.setPosition(position);
-        }
-        else if (sprite.getGlobalBounds().top + sprite.getGlobalBounds().height > windowHeight)
-        {
-            position.y -= windowHeight;
-            sprite.setPosition(position);
-            draw(window);
-            position.y += windowHeight;
-            sprite.setPosition(position);
-        }
-        if (sprite.getGlobalBounds().left < 0) {
-            position.x += windowWidth;
-            sprite.setPosition(position);
-            draw(window);
-            position.x -= windowWidth;
-            sprite.setPosition(position);
-        }
-        else if (sprite.getGlobalBounds().left + sprite.getGlobalBounds().width > windowWidth)
-        {
-            position.x -= windowWidth;
-            sprite.setPosition(position);
-            draw(window);
-            position.x += windowWidth;
-            sprite.setPosition(position);
-        }
-    }
-
-    void draw(sf::RenderWindow& window) {
-        // rysujemy sprita
-        window.draw(sprite);
-    }
-
-private:
-    sf::Vector2f position;
-    sf::Vector2f speed;
-    float rotation;
-    sf::Texture texture;
-    sf::Sprite sprite;
-};
-
-class Spaceship {
-public:
-    Spaceship(float startX, float startY)
-        : position(startX, startY), speed(0, 0), rotation(0.0f) {
-        // Load spaceship texture
-        if (!texture.loadFromFile("spaceship.png")) {
-            // Handle loading error
-            printf("sraka!!");
-        }
-        sprite.setTexture(texture);
-        sprite.setScale(0.02, 0.02);
-        sprite.setOrigin(texture.getSize().x / 2, texture.getSize().y / 2); // Set origin to center for proper rotation
-    }
-
-    void setSpeed(float x, float y) {
-        speed.x = x;
-        speed.y = y;
-    }
-
-    void setRotation(float angle) {
-        rotation = angle;
-    }
-
-    Sprite getSprite() {
-        return sprite;
-    }
-
-    void update(float deltaTime, int windowWidth, int windowHeight, RenderWindow& window) {
-        // update pozycji
-        position.x += speed.x * deltaTime;
-        position.y += speed.y * deltaTime;
-
-        // eleportacja jak jest na krañcu ekranu
-        if (position.x < 0) {
-            position.x = windowWidth;
-        }
-        else if (position.x > windowWidth) {
-            position.x = 0;
-        }
-        if (position.y < 0) {
-            position.y = windowHeight;
-        }
-        else if (position.y > windowHeight) {
-            position.y = 0;
-        }
-
-        sprite.setPosition(position);
-        sprite.setRotation(rotation);
-
-        //rysowanie statku
-        draw(window);
-        if (sprite.getGlobalBounds().top < 0) {
-            position.y += windowHeight;
-            sprite.setPosition(position);
-            draw(window);
-            position.y -= windowHeight;
-            sprite.setPosition(position);
-        }
-        else if (sprite.getGlobalBounds().top + sprite.getGlobalBounds().height > windowHeight)
-        {
-            position.y -= windowHeight;
-            sprite.setPosition(position);
-            draw(window);
-            position.y += windowHeight;
-            sprite.setPosition(position);
-        }
-        if (sprite.getGlobalBounds().left < 0) {
-            position.x += windowWidth;
-            sprite.setPosition(position);
-            draw(window);
-            position.x -= windowWidth;
-            sprite.setPosition(position);
-        }
-        else if (sprite.getGlobalBounds().left + sprite.getGlobalBounds().width > windowWidth)
-        {
-            position.x -= windowWidth;
-            sprite.setPosition(position);
-            draw(window);
-            position.x += windowWidth;
-            sprite.setPosition(position);
-        }
-    }
-
-    void draw(sf::RenderWindow& window) {
-        // rysujemy sprita
-        window.draw(sprite);
-    }
-
-    void rotate(float angle) {
-        rotation += angle;
-    }
-
-    void accelerate(float acceleration) {
-        // Calculate new speed based on the rotation
-        speed.x += acceleration * std::sin(rotation * DEG_TO_RAD);
-        speed.y += acceleration * -std::cos(rotation * DEG_TO_RAD);
-    }
-
-    Projectile* shooting(int windowWidth)
-    {
-        return new Projectile(position.x, position.y, sin(rotation * DEG_TO_RAD) * 0.1 * windowWidth, -cos(rotation * DEG_TO_RAD) * 0.1 * windowWidth);
-    }
-
-private:
-    sf::Vector2f position;
-    sf::Vector2f speed;
-    float rotation;
-    sf::Texture texture;
-    sf::Sprite sprite;
-};
-
-
-int main() {
+void GameplayLoop(int connection) {
+    //test2323
     VideoMode desktopMode = VideoMode::getDesktopMode(); //wyci¹gamy rozmiar monitora
     sf::RenderWindow window(desktopMode, "Asteroids Clone", Style::Fullscreen); //tworzymy okno gry
 
@@ -218,7 +36,19 @@ int main() {
     //zegar bo potem musi byæ delta time ¿eby dzia³a³o jak ma
     sf::Clock clock;
 
+    //data to send
+    int data[DATA_PACKET_SIZE];
+
+#ifdef PERIODIC_PACKET_SEND
+    double timePassed = 0;
+#endif
+
     while (window.isOpen()) {
+        data[0] = 12323; //id of packet (first 4 bytes of packet) 12323 - defoult id for movement
+        for (int i = 1; i < DATA_PACKET_SIZE; i++) {
+            data[i] = 0;
+        }
+
         Event event;
         while (window.pollEvent(event)) {
             if (event.type == Event::KeyPressed && event.key.code == Keyboard::Tab) { //debug log
@@ -238,15 +68,19 @@ int main() {
         // Handle input
         if (Keyboard::isKeyPressed(Keyboard::A)) {
             spaceship.rotate(-rotationSpeed * deltaTime); // lewa rotacja
+            data[1] += 1;
         }
         if (Keyboard::isKeyPressed(Keyboard::D)) {
             spaceship.rotate(rotationSpeed * deltaTime); // prawa rotacja
+            data[1] += 2;
         }
         if (Keyboard::isKeyPressed(Keyboard::W)) {
             spaceship.accelerate(acceleration * deltaTime); // przyœpieszenie
+            data[1] += 4;
         }
         if (Keyboard::isKeyPressed(Keyboard::Space)) {
             projectiles.push_back(spaceship.shooting(desktopMode.width));
+            data[1] += 8;
         }
 
         window.clear();
@@ -257,8 +91,63 @@ int main() {
             projectiles[i]->update(deltaTime, desktopMode.width, desktopMode.height, window);
         }
 
+#ifdef PERIODIC_PACKET_SEND
+        timePassed += deltaTime;
+        if (timePassed > WAIT_TIME) {
+            send(connection, (const char*)data, sizeof(data), 0);
+            timePassed -= WAIT_TIME;
+            printf("S");
+        }
+#elif
+        send(connection, (const char*)data, DATA_PACKET_SIZE * sizeof(int), 0);
+#endif // PERIODIC_PACKET_SEND
+
         window.display();
     }
+}
 
+int main() {
+
+    //initializing Windows Socket API (windows moment)
+    WSADATA wsaData;
+    int iResult;
+    iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+    if (iResult != 0) {
+        printf("WSAStartup failed: %d\n", iResult);
+        return 1;
+    }
+
+    //obtaining local ip adress
+    struct hostent* host = gethostbyname("localhost");
+    if (host == NULL) {
+        return 45;
+    }
+
+    struct sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    //htons - converts data in pc format to network format (probably little endian to big endian idk)
+    //based on this port, clients will select the appropriate server in the local network to connect to
+    addr.sin_port = htons(2278);
+    memcpy(&addr.sin_addr,host->h_addr_list[0],host->h_length);
+
+    //creating socket
+    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd == -1) {
+        return 47;
+    }
+
+    //connecting with serwer using sockaddr_in adress
+    if (connect(sockfd, (const struct sockaddr*)&addr, sizeof(addr))) {
+        return 46;
+    }
+    const char* text = "connected";
+    send(sockfd, text, strlen(text), 0);
+
+    //main gameplay loop
+    GameplayLoop(sockfd);
+
+    closesocket(sockfd);
+
+    WSACleanup();
     return 0;
 }

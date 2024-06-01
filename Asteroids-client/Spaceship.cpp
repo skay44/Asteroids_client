@@ -1,15 +1,19 @@
 #include "Spaceship.h"
 
-Spaceship::Spaceship(float startX, float startY)
-    : position(startX, startY), speed(0, 0), rotation(0.0f) {
-    // Load spaceship texture
-    if (!texture.loadFromFile("spaceship.png")) {
+sf::Texture spacetexture;
+void initSpaceshipTexture() {
+    if (!spacetexture.loadFromFile("spaceship.png")) {
         // Handle loading error
         printf("sraka!!");
     }
-    sprite.setTexture(texture);
+}
+
+Spaceship::Spaceship(float startX, float startY)
+    : position(startX, startY), speed(0, 0), rotation(0.0f) {
+    // Load spaceship texture
+    sprite.setTexture(spacetexture);
     sprite.setScale(0.02, 0.02);
-    sprite.setOrigin(texture.getSize().x / 2, texture.getSize().y / 2); // Set origin to center for proper rotation
+    sprite.setOrigin(spacetexture.getSize().x / 2, spacetexture.getSize().y / 2); // Set origin to center for proper rotation
 }
 
 void Spaceship::setSpeed(float x, float y) {
@@ -83,6 +87,8 @@ void Spaceship::update(float deltaTime, int windowWidth, int windowHeight, sf::R
 
 void Spaceship::draw(sf::RenderWindow& window) {
     // rysujemy sprita
+    sprite.setPosition(position);
+    sprite.setRotation(rotation);
     window.draw(sprite);
 }
 
@@ -96,7 +102,7 @@ void Spaceship::accelerate(float acceleration) {
     speed.y += acceleration * -std::cos(rotation * DEG_TO_RAD);
 }
 
-Projectile* Spaceship::shooting(int windowWidth)
+Projectile Spaceship::shooting(int windowWidth)
 {
-    return new Projectile(position.x, position.y, sin(rotation * DEG_TO_RAD) * 0.1 * windowWidth, -cos(rotation * DEG_TO_RAD) * 0.1 * windowWidth);
+    return Projectile(position.x, position.y, sin(rotation * DEG_TO_RAD) * 0.4 * windowWidth, -cos(rotation * DEG_TO_RAD) * 0.4 * windowWidth);
 }

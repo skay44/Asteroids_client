@@ -2,6 +2,8 @@
 #include "Projectile.hpp"
 #include "utils.h"
 
+void initSpaceshipTexture();
+
 class Spaceship {
 public:
     Spaceship(float startX, float startY);
@@ -20,12 +22,10 @@ public:
 
     void accelerate(float acceleration);
 
-    Projectile* shooting(int windowWidth);
+    Projectile shooting(int windowWidth);
 
-private:
     sf::Vector2f position;
     sf::Vector2f speed;
     float rotation;
-    sf::Texture texture;
     sf::Sprite sprite;
 };

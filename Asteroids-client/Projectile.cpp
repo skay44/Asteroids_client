@@ -1,15 +1,20 @@
 #include "Projectile.hpp"
 
-Projectile::Projectile(float startX, float startY, float speedX, float speedY)
-    : position(startX, startY), speed(speedX, speedY) {
-    // za³aduj teksturke pocisku
-    if (!texture.loadFromFile("projectile.png")) {
+sf::Texture projtexture;
+void initProjectileTexture() {
+    if (!projtexture.loadFromFile("projectile.png")) {
         // Handle loading error
         printf("sraka!!");
     }
-    sprite.setTexture(texture);
+}
+
+Projectile::Projectile(float startX, float startY, float speedX, float speedY)
+    : position(startX, startY), speed(speedX, speedY) {
+    // za³aduj teksturke pocisku
+    
+    sprite.setTexture(projtexture);
     sprite.setScale(0.05, 0.05);
-    sprite.setOrigin(texture.getSize().x / 2, texture.getSize().y / 2); // Set origin to center for proper rotation
+    sprite.setOrigin(projtexture.getSize().x / 2, projtexture.getSize().y / 2); // Set origin to center for proper rotation
     rotation = atan2(speedY, speedX) / DEG_TO_RAD + 90;
 }
 

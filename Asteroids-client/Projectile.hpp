@@ -5,6 +5,7 @@
 #include <list>
 #include "utils.h"
 
+void initProjectileTexture();
 
 class Projectile {
 public:
@@ -14,10 +15,9 @@ public:
 
     void draw(sf::RenderWindow& window);
 
-private:
+
     sf::Vector2f position;
     sf::Vector2f speed;
     float rotation;
-    sf::Texture texture;
     sf::Sprite sprite;
 };

@@ -256,7 +256,6 @@ void GameplayLoop(int connection) {
     //inicjalizacja statku, oraz zmiennych odpowiadaj¹cych za poruszanie.
     initSpaceshipTexture();
     Spaceship spaceship(desktopMode.width -1, desktopMode.height - 1, true, -1);
-    bool cooperatorConnected = false;
     spaceship.setSpeed(0, 0);
     double rotationSpeed = 100;
     double acceleration = 0.1 * desktopMode.width;
@@ -355,13 +354,11 @@ void GameplayLoop(int connection) {
             projectiles[i].update(deltaTime, desktopMode.width, desktopMode.height, window);
         }
         projectileMutex.unlock();
-        if (cooperatorConnected) {
-            coopMutex.lock();
-            for (int i = 0; i < ships.size(); i++) {
-                ships[i].draw(window);
-            }
-            coopMutex.unlock();
+        coopMutex.lock();
+        for (int i = 0; i < ships.size(); i++) {
+            ships[i].draw(window);
         }
+        coopMutex.unlock();
         asteroidMutex.lock();
         for (int i = 0; i < asteroids.size(); i++) {
             asteroids[i].update(deltaTime, desktopMode.width, desktopMode.height, window);

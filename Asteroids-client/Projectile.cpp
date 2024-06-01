@@ -8,7 +8,7 @@ void initProjectileTexture() {
     }
 }
 
-Projectile::Projectile(float startX, float startY, float speedX, float speedY)
+Projectile::Projectile(float startX, float startY, float speedX, float speedY, int id)
     : position(startX, startY), speed(speedX, speedY) {
     // za³aduj teksturke pocisku
     
@@ -16,6 +16,7 @@ Projectile::Projectile(float startX, float startY, float speedX, float speedY)
     sprite.setScale(0.05, 0.05);
     sprite.setOrigin(projtexture.getSize().x / 2, projtexture.getSize().y / 2); // Set origin to center for proper rotation
     rotation = atan2(speedY, speedX) / DEG_TO_RAD + 90;
+    this->id = id;
 }
 
 void Projectile::update(float deltaTime, int windowWidth, int windowHeight, sf::RenderWindow& window) {

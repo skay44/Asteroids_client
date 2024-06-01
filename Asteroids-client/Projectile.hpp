@@ -9,7 +9,7 @@ void initProjectileTexture();
 
 class Projectile {
 public:
-    Projectile(float startX, float startY, float speedX, float speedY);
+    Projectile(float startX, float startY, float speedX, float speedY, int id);
 
     void update(float deltaTime, int windowWidth, int windowHeight, sf::RenderWindow& window);
 
@@ -20,4 +20,5 @@ public:
     sf::Vector2f speed;
     float rotation;
     sf::Sprite sprite;
+    int id;
 };

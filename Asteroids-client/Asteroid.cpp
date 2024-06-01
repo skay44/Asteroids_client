@@ -1,38 +1,26 @@
-#include "Spaceship.h"
+#include "Asteroid.h"
 
-sf::Texture spacetexture;
-void initSpaceshipTexture() {
-    if (!spacetexture.loadFromFile("spaceship.png")) {
+sf::Texture asteroidtexture;
+void initAsteroidTexture() {
+    if (!asteroidtexture.loadFromFile("asteroid.png")) {
         // Handle loading error
         printf("sraka!!");
     }
 }
 
-Spaceship::Spaceship(float startX, float startY, bool isMe, int id)
-    : position(startX, startY), speed(0, 0), rotation(0.0f) {
-    // Load spaceship texture
-    sprite.setTexture(spacetexture);
-    sprite.setScale(0.02, 0.02);
-    sprite.setOrigin(spacetexture.getSize().x / 2, spacetexture.getSize().y / 2); // Set origin to center for proper rotation
-    if (!isMe)
-        sprite.setColor(sf::Color::Red);
+Asteroid::Asteroid(float startX, float startY, float speedX, float speedY, int id, int size)
+    : position(startX, startY), speed(speedX, speedY) {
+
+    sprite.setTexture(asteroidtexture);
+    sprite.setScale(0.05 * size, 0.05 * size);
+    sprite.setOrigin(asteroidtexture.getSize().x / 2, asteroidtexture.getSize().y / 2); // Set origin to center for proper rotation
+    rotation = atan2(speedY, speedX) / DEG_TO_RAD + 90;
     this->id = id;
+    this->size = size;
+    //printf("%f %f",sprite.getGlobalBounds().width, sprite.getGlobalBounds().height);
 }
 
-void Spaceship::setSpeed(float x, float y) {
-    speed.x = x;
-    speed.y = y;
-}
-
-void Spaceship::setRotation(float angle) {
-    rotation = angle;
-}
-
-sf::Sprite Spaceship::getSprite() {
-    return sprite;
-}
-
-void Spaceship::update(float deltaTime, int windowWidth, int windowHeight, sf::RenderWindow& window) {
+void Asteroid::update(float deltaTime, int windowWidth, int windowHeight, sf::RenderWindow& window) {
     // update pozycji
     position.x += speed.x * deltaTime;
     position.y += speed.y * deltaTime;
@@ -88,24 +76,7 @@ void Spaceship::update(float deltaTime, int windowWidth, int windowHeight, sf::R
     }
 }
 
-void Spaceship::draw(sf::RenderWindow& window) {
+void Asteroid::draw(sf::RenderWindow& window) {
     // rysujemy sprita
-    sprite.setPosition(position);
-    sprite.setRotation(rotation);
     window.draw(sprite);
-}
-
-void Spaceship::rotate(float angle) {
-    rotation += angle;
-}
-
-void Spaceship::accelerate(float acceleration) {
-    // Calculate new speed based on the rotation
-    speed.x += acceleration * std::sin(rotation * DEG_TO_RAD);
-    speed.y += acceleration * -std::cos(rotation * DEG_TO_RAD);
-}
-
-Projectile Spaceship::shooting(int windowWidth)
-{
-    return Projectile(position.x, position.y, sin(rotation * DEG_TO_RAD) * 0.4 * windowWidth, -cos(rotation * DEG_TO_RAD) * 0.4 * windowWidth, -1);
 }

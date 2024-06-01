@@ -6,7 +6,7 @@ void initSpaceshipTexture();
 
 class Spaceship {
 public:
-    Spaceship(float startX, float startY);
+    Spaceship(float startX, float startY, bool isMe, int id);
 
     void setSpeed(float x, float y);
 
@@ -28,4 +28,5 @@ public:
     sf::Vector2f speed;
     float rotation;
     sf::Sprite sprite;
+    int id;
 };

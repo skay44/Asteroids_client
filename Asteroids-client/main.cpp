@@ -1,9 +1,10 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
 
-#define PLAYER_CODE 0b10000001
+#define PLAYER_CODE     0b10000001
 #define PROJECTILE_CODE 0b10000010
 #define ASTEROID_CODE   0b10000100
+#define DELETUS_CODE    0b10001000
 
 #include <SFML/Graphics.hpp>
 #include <cmath>
@@ -51,7 +52,7 @@ typedef struct _sendFrameEntity {
 
 #pragma pack(push,1)
 typedef struct _asteroidFrame {
-    unsigned char header;     //kod okreslajacy co to za rodzaj ramki (0b10000011 - asteroida)
+    unsigned char header;     //kod okreslajacy co to za rodzaj ramki (0b10000100 - asteroida)
     short ID;
     float posX;
     float posY;
@@ -60,6 +61,14 @@ typedef struct _asteroidFrame {
     float rotation;
     unsigned char size;
 } asteroidFrame;
+#pragma pack(pop)
+
+#pragma pack(push,1)
+typedef struct _deletus {
+    unsigned char header;       //kod okreslajacy co to za rodzaj ramki (inne niz 0b1000001 oraz 0b10001000)
+    unsigned char toDelete;     //1- delete player 2- delete projectile 3- delete asteroid
+    unsigned char ID;           //id of element to delete
+} deletus;
 #pragma pack(pop)
 
 Mutex coopMutex;
@@ -176,6 +185,53 @@ void receive(int connection, std::vector<Spaceship>& ships, std::vector<Projecti
 
             asteroidMutex.unlock();
         }
+        else if (header == DELETUS_CODE) {
+            while (total_bytes_received < sizeof(deletus)) {
+                bytes_received = recv(connection, readBuffer + total_bytes_received, sizeof(deletus) - total_bytes_received, 0);
+                if (bytes_received <= 0) {
+                    // handle errors or connection closed
+                    perror("recv failed");
+                    _close(connection);
+                    return;
+                }
+                total_bytes_received += bytes_received;
+            }
+            // Now we have a complete frame in readBuffer
+            deletus* f = (deletus*)readBuffer;
+
+            switch (f->toDelete) {
+            case 1: //players
+                coopMutex.lock();
+                for (auto i = ships.begin(); i != ships.end(); i++) {
+                    if (f->ID == i->id) {
+                        ships.erase(i);
+                        break;
+                    }
+                }
+                coopMutex.unlock();
+                break;
+            case 2: //projectile
+                projectileMutex.lock();
+                for (auto i = projectiles.begin(); i != projectiles.end(); i++) {
+                    if (f->ID == i->id) {
+                        projectiles.erase(i);
+                        break;
+                    }
+                }
+                projectileMutex.unlock();
+                break;
+            case 3: //asteroid
+                asteroidMutex.lock();
+                for (auto i = asteroids.begin(); i != asteroids.end(); i++) {
+                    if (f->ID == i->id) {
+                        asteroids.erase(i);
+                        break;
+                    }
+                }
+                asteroidMutex.unlock();
+                break;
+            }
+        }
         /*else {//inna ramka niz gracz i asteroida
             while (total_bytes_received < sizeof(sendFrameSerwerInfo)) {
                 bytes_received = recv(sockfd, readBuffer + total_bytes_received, sizeof(sendFrameSerwerInfo) - total_bytes_received, 0);
@@ -185,8 +241,7 @@ void receive(int connection, std::vector<Spaceship>& ships, std::vector<Projecti
                     close(sockfd);
                     return NULL;
                 }
-                total_bytes_received += bytes_received;
-            }
+                total_bytes_received += bytes_recei
             printf("Unknown frame. Header: %d\n", header);
         }*/
     }

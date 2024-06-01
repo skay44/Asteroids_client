@@ -17,7 +17,7 @@ Asteroid::Asteroid(float startX, float startY, float speedX, float speedY, int i
     rotation = atan2(speedY, speedX) / DEG_TO_RAD + 90;
     this->id = id;
     this->size = size;
-    printf("%f %f",sprite.getGlobalBounds().width, sprite.getGlobalBounds().height);
+    //printf("%f %f",sprite.getGlobalBounds().width, sprite.getGlobalBounds().height);
 }
 
 void Asteroid::update(float deltaTime, int windowWidth, int windowHeight, sf::RenderWindow& window) {

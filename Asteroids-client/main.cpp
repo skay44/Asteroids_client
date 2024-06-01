@@ -82,12 +82,12 @@ Mutex asteroidMutex;
 #define PERIODIC_PACKET_SEND
 #define WAIT_TIME 0.5
 
-void receive(int connection, std::vector<Spaceship>& ships, std::vector<Projectile>& projectiles, std::vector<Asteroid>& asteroids) {
+void receive(int connection, std::vector<Spaceship>& ships, std::vector<Projectile>& projectiles, std::vector<Asteroid>& asteroids, bool& isWorking) {
     int bytes_received = 0;
     int total_bytes_received = 0;
     char readBuffer[50];
     sendFrameEntity frame;
-    while (true) {
+    while (isWorking) {
         total_bytes_received = 0;
         bytes_received = recv(connection, readBuffer, 1, 0);    //wczytywanie 1 bajtu do odczytania headera
         if (bytes_received <= 0) {
@@ -270,6 +270,7 @@ void GameplayLoop(int connection) {
     initProjectileTexture();
     initAsteroidTexture();
 
+    bool isWorking = true;
     double sendTimer = 0;
     double sendCooldown = 0.02;
     int shot = 0;
@@ -281,7 +282,7 @@ void GameplayLoop(int connection) {
     //data to send
     unsigned char data[DATA_PACKET_SIZE];
     unsigned char fakeData[DATA_PACKET_SIZE];
-    std::thread cum{ receive, connection, std::ref(ships), std::ref(projectiles), std::ref(asteroids)};
+    std::thread cum{ receive, connection, std::ref(ships), std::ref(projectiles), std::ref(asteroids), std::ref(isWorking)};
 
     while (window.isOpen()) {
         fakeData[0] = 12323; //id of packet (first 4 bytes of packet) 12323 - defoult id for movement
@@ -299,6 +300,8 @@ void GameplayLoop(int connection) {
             }
             if (event.type == sf::Event::Closed || event.type == Event::KeyPressed && event.key.code == Keyboard::Escape) //zamykanie okna x'em
             {
+                isWorking = false;
+                cum.join();
                 window.close();
             }
         }

@@ -37,7 +37,7 @@ typedef struct {
 
 #pragma pack(push,1)
 typedef struct _sendFrameEntity {
-    unsigned char header;     //kod okreslajacy co to za rodzaj ramki (0b1000001 - gracz, 0b10000010 - asteroida)
+    unsigned char header;     //kod okreslajacy co to za rodzaj ramki (0b1000001 - gracz, 0b10000010 - pocisk)
     short ID;
     float posX;
     float posY;
@@ -49,6 +49,7 @@ typedef struct _sendFrameEntity {
 
 Mutex coopMutex;
 Mutex connectedMutex;
+Mutex projectileMutex;
 
 //size of temporary data packet - we should determine the details of how to send data in order to do anything further
 #define DATA_PACKET_SIZE 39
@@ -56,7 +57,7 @@ Mutex connectedMutex;
 #define PERIODIC_PACKET_SEND
 #define WAIT_TIME 0.5
 
-void receive(int connection, Spaceship &player, bool& connected) {
+void receive(int connection, Spaceship &player, bool& connected, std::vector<Projectile>& projectiles) {
     int bytes_received = 0;
     int total_bytes_received = 0;
     char readBuffer[sizeof(sendFrameEntity)];
@@ -99,8 +100,22 @@ void receive(int connection, Spaceship &player, bool& connected) {
                 printf("sraka %f\n", f->posX);
                 coopMutex.unlock();
             }
-            else {
-                printf("Get data from server. Asteroid data: %d\n", f->ID);
+            else if (f->header == PROJECTILE_CODE) {
+                bool isNewProjectile = true;
+                projectileMutex.lock();
+                for (int i = 0; i < projectiles.size(); i++) {
+                    if (f->ID == projectiles[i].id) {
+                        isNewProjectile = false;
+                        projectiles[i].position.x = f->posX;
+                        projectiles[i].position.y = f->posY;
+
+                    }
+                }
+                if (isNewProjectile) {
+                    projectiles.push_back(Projectile(f->posX, f->posY, f->speedX, f->speedY, f->ID));
+                }
+
+                projectileMutex.unlock();
             }
 
         }
@@ -135,15 +150,16 @@ void GameplayLoop(int connection) {
     double rotationSpeed = 100;
     double acceleration = 0.1 * desktopMode.width;
     double maxSpeed = 1 * desktopMode.width;
-    double shotCooldown = 0.05;
+    double shotCooldown = 0.5;
     double shotTimer = 0;
 
     std::vector<Projectile> projectiles;
     initProjectileTexture();
 
     double sendTimer = 0;
+    double sendCooldown = 0.02;
     int shot = 0;
-    Projectile proj(0, 0, 0, 0);
+    Projectile proj(0, 0, 0, 0, -1);
 
     //zegar bo potem musi byæ delta time ¿eby dzia³a³o jak ma
     Clock clock;
@@ -151,7 +167,7 @@ void GameplayLoop(int connection) {
     //data to send
     unsigned char data[DATA_PACKET_SIZE];
     unsigned char fakeData[DATA_PACKET_SIZE];
-    std::thread cum{ receive, connection, std::ref(cooperator), std::ref(cooperatorConnected) };
+    std::thread cum{ receive, connection, std::ref(cooperator), std::ref(cooperatorConnected), std::ref(projectiles) };
 
     while (window.isOpen()) {
         fakeData[0] = 12323; //id of packet (first 4 bytes of packet) 12323 - defoult id for movement
@@ -194,7 +210,7 @@ void GameplayLoop(int connection) {
             if (shotTimer > shotCooldown)
             {
                 proj = spaceship.shooting(desktopMode.width);
-                projectiles.push_back(proj);
+                //projectiles.push_back(proj);
                 shotTimer = 0;
                 shot = 1;
             }
@@ -203,7 +219,7 @@ void GameplayLoop(int connection) {
 
         Frame frame = {1, shot, keys, spaceship.position.x, spaceship.position.y, spaceship.speed.x, spaceship.speed.y, spaceship.rotation, proj.position.x, proj.position.y, proj.speed.x, proj.speed.y };
 
-        if (sendTimer > shotCooldown) {
+        if (sendTimer > sendCooldown) {
             send(connection, (const char*)&frame, sizeof(Frame), 0);
             sendTimer = 0;
             shot = 0;
@@ -217,9 +233,11 @@ void GameplayLoop(int connection) {
 
         // Update spaceship
         spaceship.update(deltaTime, desktopMode.width, desktopMode.height, window);
+        projectileMutex.lock();
         for (int i = 0; i < projectiles.size(); i++) {
             projectiles[i].update(deltaTime, desktopMode.width, desktopMode.height, window);
         }
+        projectileMutex.unlock();
         if (cooperatorConnected) {
             coopMutex.lock();
             cooperator.draw(window);

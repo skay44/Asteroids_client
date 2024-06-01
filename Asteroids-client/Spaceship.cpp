@@ -104,5 +104,5 @@ void Spaceship::accelerate(float acceleration) {
 
 Projectile Spaceship::shooting(int windowWidth)
 {
-    return Projectile(position.x, position.y, sin(rotation * DEG_TO_RAD) * 0.4 * windowWidth, -cos(rotation * DEG_TO_RAD) * 0.4 * windowWidth);
+    return Projectile(position.x, position.y, sin(rotation * DEG_TO_RAD) * 0.4 * windowWidth, -cos(rotation * DEG_TO_RAD) * 0.4 * windowWidth, -1);
 }

@@ -82,22 +82,25 @@ Mutex asteroidMutex;
 #define PERIODIC_PACKET_SEND
 #define WAIT_TIME 0.5
 
-void receive(int connection, std::vector<Spaceship>& ships, std::vector<Projectile>& projectiles, std::vector<Asteroid>& asteroids, bool& isWorking) {
+void receive(int connection, std::vector<Spaceship>& ships, std::vector<Projectile>& projectiles, std::vector<Asteroid>& asteroids, bool& isWorking, bool& isAlive) {
     int bytes_received = 0;
     int total_bytes_received = 0;
     char readBuffer[50];
     sendFrameEntity frame;
     while (isWorking) {
         total_bytes_received = 0;
+        printf("4 - start ");
         bytes_received = recv(connection, readBuffer, 1, 0);    //wczytywanie 1 bajtu do odczytania headera
         if (bytes_received <= 0) {
             // handle errors or connection closed
+            //printf("kupa");
             perror("recv failed");
             _close(connection);
             return;
         }
         total_bytes_received += bytes_received;
         unsigned char header = readBuffer[0];   //pobieranie headera
+        printf("4 - end ");
 
         if (header == PLAYER_CODE || header == PROJECTILE_CODE) { //ramka gracza, asteroid i pocisków
             // Loop to ensure we receive the complete frame
@@ -110,6 +113,7 @@ void receive(int connection, std::vector<Spaceship>& ships, std::vector<Projecti
                     return;
                 }
                 total_bytes_received += bytes_received;
+                //printf("1");
             }
             // Now we have a complete frame in readBuffer
             sendFrameEntity* f = (sendFrameEntity*)readBuffer;
@@ -159,6 +163,7 @@ void receive(int connection, std::vector<Spaceship>& ships, std::vector<Projecti
                     return;
                 }
                 total_bytes_received += bytes_received;
+                //printf("2");
             }
             // Now we have a complete frame in readBuffer
             asteroidFrame* f = (asteroidFrame*)readBuffer;
@@ -195,6 +200,7 @@ void receive(int connection, std::vector<Spaceship>& ships, std::vector<Projecti
                     return;
                 }
                 total_bytes_received += bytes_received;
+                //printf("3");
             }
             // Now we have a complete frame in readBuffer
             deletus* f = (deletus*)readBuffer;
@@ -230,6 +236,10 @@ void receive(int connection, std::vector<Spaceship>& ships, std::vector<Projecti
                 }
                 asteroidMutex.unlock();
                 break;
+            case 4:
+                isAlive = false;
+                break;
+               
             }
         }
         /*else {//inna ramka niz gracz i asteroida
@@ -255,7 +265,7 @@ void GameplayLoop(int connection) {
 
     //inicjalizacja statku, oraz zmiennych odpowiadaj¹cych za poruszanie.
     initSpaceshipTexture();
-    Spaceship spaceship(desktopMode.width -1, desktopMode.height - 1, true, -1);
+    Spaceship spaceship(desktopMode.width /2, desktopMode.height /2, true, -1);
     spaceship.setSpeed(0, 0);
     double rotationSpeed = 100;
     double acceleration = 0.1 * desktopMode.width;
@@ -270,6 +280,7 @@ void GameplayLoop(int connection) {
     initAsteroidTexture();
 
     bool isWorking = true;
+    bool isAlive = true;
     double sendTimer = 0;
     double sendCooldown = 0.02;
     int shot = 0;
@@ -281,12 +292,13 @@ void GameplayLoop(int connection) {
     //data to send
     unsigned char data[DATA_PACKET_SIZE];
     unsigned char fakeData[DATA_PACKET_SIZE];
-    std::thread cum{ receive, connection, std::ref(ships), std::ref(projectiles), std::ref(asteroids), std::ref(isWorking)};
+    std::thread cum{ receive, connection, std::ref(ships), std::ref(projectiles), std::ref(asteroids), std::ref(isWorking), std::ref(isAlive)};
 
     while (window.isOpen()) {
-        fakeData[0] = 12323; //id of packet (first 4 bytes of packet) 12323 - defoult id for movement
-        for (int i = 1; i < DATA_PACKET_SIZE; i++) {
-            fakeData[i] = 0;
+
+        if (isWorking == false) {
+            cum.join();
+            window.close();
         }
 
         Event event;
@@ -344,11 +356,10 @@ void GameplayLoop(int connection) {
             sendTimer += deltaTime;
         }
 
-
         window.clear();
 
         // Update spaceship
-        spaceship.update(deltaTime, desktopMode.width, desktopMode.height, window);
+        if(isAlive) spaceship.update(deltaTime, desktopMode.width, desktopMode.height, window);
         projectileMutex.lock();
         for (int i = 0; i < projectiles.size(); i++) {
             projectiles[i].update(deltaTime, desktopMode.width, desktopMode.height, window);
